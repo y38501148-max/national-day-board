@@ -12,6 +12,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   deploy:
+    if: github.repository == 'y38501148-max/national-day-board'
     runs-on: ubuntu-latest
     environment:
       name: github-pages
