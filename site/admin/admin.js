@@ -92,22 +92,30 @@ function renderPlayers() {
     if (!players.some(player => String(player.handle).toLowerCase() === String(handle).toLowerCase())) players.push({handle, status: 'banned'});
   }
   const query = $('player-search').value.trim().toLowerCase();
-  const matches = players.filter(player => String(player.handle || '').toLowerCase().includes(query));
+  const matches = players.filter(player => [player.handle, player.name, player.student_id, player.user_id].some(value => String(value ?? '').toLowerCase().includes(query)));
   const fragment = document.createDocumentFragment();
   for (const player of matches.slice(0, 100)) {
     const banned = player.status === 'banned' || bannedUsers.has(String(player.user_id)) || bannedHandles.has(String(player.handle).toLowerCase());
-    const row = node('tr'); cell(row, player.handle || '—');
+    const row = node('tr'); cell(row, player.handle || '—'); cell(row, player.name || '待获取', 'identity-name'); cell(row, player.student_id || '—', 'identity-student');
     const status = node('td'); status.append(node('span', banned ? '已封禁' : player.status === 'pending' ? '待处理' : '正常', `badge${banned ? ' banned' : ''}`)); row.append(status);
     const actions = node('td'); actions.append(button(banned ? '解封' : '封禁', banned ? 'unban_player' : 'ban_player', {handle: player.handle, ...(player.user_id == null ? {} : {user_id: player.user_id})})); row.append(actions); fragment.append(row);
   }
-  if (!fragment.children.length) emptyRow(fragment, 3, query ? '没有找到选手。' : '暂无选手。');
+  if (!fragment.children.length) emptyRow(fragment, 5, query ? '没有找到选手。' : '暂无选手。');
   $('player-rows').replaceChildren(fragment);
   $('player-count').textContent = `${matches.length} 位选手${matches.length > 100 ? ' · 显示前 100 位，请搜索定位' : ''}`;
 }
 function renderSubmissions() {
   const ignored = new Set((state.config.moderation?.ignored_submission_ids || []).map(String));
   const query = $('submission-search').value.trim().toLowerCase();
-  const matches = (state.snapshot.submissions || []).filter(submission => [submission.id, submission.handle, submission.problem_id].some(value => String(value ?? '').toLowerCase().includes(query))).slice().sort((a, b) => Date.parse(b.created_at) - Date.parse(a.created_at));
+  const identities = new Map();
+  for (const player of state.snapshot.participants || []) {
+    if (player.user_id != null) identities.set(`user:${player.user_id}`, player);
+    if (player.handle) identities.set(`handle:${String(player.handle).toLowerCase()}`, player);
+  }
+  const matches = (state.snapshot.submissions || []).filter(submission => {
+    const player = identities.get(`user:${submission.user_id}`) || identities.get(`handle:${String(submission.handle || '').toLowerCase()}`);
+    return [submission.id, submission.handle, submission.problem_id, submission.user_id, submission.name, submission.student_id, player?.name, player?.student_id].some(value => String(value ?? '').toLowerCase().includes(query));
+  }).slice().sort((a, b) => Date.parse(b.created_at) - Date.parse(a.created_at));
   const fragment = document.createDocumentFragment();
   for (const submission of matches.slice(0, 100)) {
     const isIgnored = submission.ignored === true || ignored.has(String(submission.id));

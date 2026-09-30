@@ -8,8 +8,8 @@
   <title>国庆赛外榜 · 管理</title>
   <link rel="icon" href="../favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="../style.css?v=f157091dd5ea">
-  <link rel="stylesheet" href="./admin.css?v=685fe5635026">
-  <script src="./admin.js?v=d1df1fe2a6db" defer></script>
+  <link rel="stylesheet" href="./admin.css?v=3846b6beda5c">
+  <script src="./admin.js?v=9c6a6f118cba" defer></script>
 </head>
 <body>
   <header class="topbar wrap"><h1>国庆赛外榜 · 管理</h1><nav><a href="../">查看榜单</a><button id="logout" class="nav-button" hidden>退出</button></nav></header>
@@ -41,17 +41,17 @@
         <form id="registration-mode-form" class="inline-form"><label for="registration-mode">解析方式</label><select id="registration-mode" name="value"><option value="stdout">实际标准输出</option><option value="template">固定 C 模板</option></select><button class="secondary" type="submit">保存方式</button></form></div>
         <p id="registration-note" class="muted compact"></p><p id="registration-error" class="error" role="status" hidden></p>
         <form id="roster-form" class="inline-form roster-form"><label for="roster-file">私有身份映射</label><input id="roster-file" name="csv" type="file" accept=".csv,text/csv" required><button class="secondary" type="submit">上传 CSV</button></form>
-        <p class="muted compact">CSV 列：user_id,student_id · 最大 512 KB；身份映射只保存在私有后台。</p>
+        <p class="muted compact">CSV 列：user_id,student_id；可选 name · 最大 512 KB；身份映射只保存在私有后台。</p>
         <p id="unmapped-note" class="muted compact" hidden></p>
       </section>
       <section class="panel" aria-labelledby="participants-title">
         <div class="section-heading"><h2 id="participants-title">选手</h2><form id="ban-player-form" class="inline-form"><label class="sr-only" for="ban-handle">公开榜单 ID</label><input id="ban-handle" name="handle" placeholder="公开榜单 ID" required maxlength="40" autocomplete="off"><button class="secondary" type="submit">封禁</button></form></div>
-        <label class="search admin-search"><input id="player-search" type="search" placeholder="搜索公开榜单 ID" aria-label="搜索选手" autocomplete="off"></label>
+        <label class="search admin-search"><input id="player-search" type="search" placeholder="榜单 ID、姓名或学号" aria-label="搜索选手的公开 ID、姓名、学号或 OJ ID" autocomplete="off"></label>
         <p id="player-count" class="muted compact"></p>
-        <div class="table-scroll"><table><thead><tr><th>公开榜单 ID</th><th>状态</th><th>操作</th></tr></thead><tbody id="player-rows"></tbody></table></div>
+        <div class="table-scroll"><table><thead><tr><th>公开榜单 ID</th><th>真实姓名</th><th>学号</th><th>状态</th><th>操作</th></tr></thead><tbody id="player-rows"></tbody></table></div>
       </section>
       <section class="panel" aria-labelledby="submissions-title">
-        <div class="section-heading"><h2 id="submissions-title">提交记录</h2><label class="search admin-search"><input id="submission-search" type="search" placeholder="提交 ID / 公开 ID / 题目 ID" aria-label="搜索提交记录" autocomplete="off"></label></div>
+        <div class="section-heading"><h2 id="submissions-title">提交记录</h2><label class="search admin-search"><input id="submission-search" type="search" placeholder="提交 / 题目 / 选手 / 姓名 / 学号" aria-label="搜索提交记录、姓名或学号" autocomplete="off"></label></div>
         <p id="submission-count" class="muted compact"></p>
         <form id="submission-action-form" class="inline-form"><label for="manual-submission-id">提交 ID</label><input id="manual-submission-id" name="submission_id" inputmode="numeric" pattern="[0-9]+" placeholder="任意提交 ID" required maxlength="20" autocomplete="off"><button class="secondary" type="submit" name="action" value="ignore_submission">忽略</button><button class="secondary" type="submit" name="action" value="restore_submission">恢复</button><span class="muted">列表只展示最近记录</span></form>
         <div class="table-scroll"><table><thead><tr><th>提交 ID</th><th>公开榜单 ID</th><th>题目 ID</th><th>结果</th><th>分数</th><th>提交时间</th><th>操作</th></tr></thead><tbody id="submission-rows"></tbody></table></div>

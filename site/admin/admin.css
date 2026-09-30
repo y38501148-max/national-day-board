@@ -2,3 +2,6 @@
 @media(max-width:720px){.panel{padding:12px}.section-heading{align-items:stretch;flex-direction:column}.section-heading .inline-form{width:100%}.admin-search input{width:100%}.sync-panel>div{align-items:flex-start;flex-direction:column;gap:3px}.sync-panel .primary{flex-shrink:0}.form-row{gap:16px}.inline-form input{width:130px}}
 
 .roster-form{margin-top:16px}.roster-form input[type=file]{width:min(300px,100%);font-size:12px}
+
+.panel td.identity-student{white-space:nowrap;font-family:var(--mono);font-variant-numeric:tabular-nums}.panel td.identity-name{white-space:normal;min-width:90px}#player-search,#submission-search{width:300px}
+@media(max-width:720px){#player-search,#submission-search{width:100%}}
