@@ -1,0 +1,78 @@
+name: Live leaderboard collection
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+    inputs:
+      one_shot:
+        description: Collect and publish once, then exit
+        type: boolean
+        default: false
+      cycles:
+        description: Optional cycle count for verification (for example 3)
+        type: string
+        default: ''
+      poll_seconds:
+        description: Collection interval in seconds
+        type: choice
+        options: ['30', '10']
+        default: '30'
+permissions:
+  contents: read
+concurrency:
+  group: national-day-live
+  cancel-in-progress: false
+jobs:
+  collect:
+    if: github.event_name == 'workflow_dispatch' || vars.LIVE_SYNC_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout private application source
+        uses: actions/checkout@v6
+        with:
+          repository: y38501148-max/national-day-board-code
+          ref: main
+          path: application
+          fetch-depth: 1
+          ssh-key: ${{ secrets.CODE_REPO_DEPLOY_KEY }}
+      - name: Checkout public deployment repository
+        uses: actions/checkout@v6
+        with:
+          repository: y38501148-max/national-day-board
+          ref: main
+          path: public
+          fetch-depth: 0
+          ssh-key: ${{ secrets.PUBLIC_REPO_DEPLOY_KEY }}
+      - name: Checkout private source and evidence
+        uses: actions/checkout@v6
+        with:
+          repository: y38501148-max/national-day-board-data
+          ref: main
+          path: private
+          fetch-depth: 0
+          ssh-key: ${{ secrets.PRIVATE_REPO_DEPLOY_KEY }}
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
+      - name: Verify replay and publication safeguards
+        working-directory: application
+        run: python3 -m unittest discover -s tests
+      - name: 'Continuous OJ polling (30s interval, 20min session)'
+        working-directory: application
+        env:
+          SSO_USERNAME: ${{ secrets.SSO_USERNAME }}
+          SSO_PASSWORD: ${{ secrets.SSO_PASSWORD }}
+          OJ_USERNAME: ${{ secrets.OJ_USERNAME }}
+          OJ_PASSWORD: ${{ secrets.OJ_PASSWORD }}
+          LIVE_PUBLISH_KEY: ${{ secrets.LIVE_PUBLISH_KEY }}
+          LIVE_API_BASE: ${{ vars.LIVE_API_BASE }}
+          ONE_SHOT: ${{ inputs.one_shot }}
+          CYCLES: ${{ inputs.cycles }}
+          POLL_SECONDS: ${{ inputs.poll_seconds }}
+        run: |
+          args=(--private ../private --public ../public --output _site --duration 1200)
+          if [ "$ONE_SHOT" = true ]; then args+=(--one-shot); fi
+          if [ -n "$CYCLES" ]; then args+=(--cycles "$CYCLES"); fi
+          args+=(--interval "${POLL_SECONDS:-30}")
+          python3 -u deploy/live_sync.py "${args[@]}"
