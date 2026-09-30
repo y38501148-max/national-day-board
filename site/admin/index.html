@@ -32,7 +32,7 @@
       <p id="config-summary" class="muted"></p>
       <section class="panel" aria-labelledby="problems-title">
         <div class="section-heading"><h2 id="problems-title">比赛题目</h2><form id="contest-form" class="inline-form"><label for="contest-id">比赛 ID</label><input id="contest-id" name="contest_id" inputmode="numeric" pattern="[0-9]+" value="1317" required maxlength="10"><button class="primary" type="submit">同步比赛</button></form></div>
-        <p class="muted compact">自动同步比赛题单、题号顺序和题面 Rating。未标注 Rating 的题目先按 0 处理，每次同步重新检查；题单变更请在 OJ 比赛中操作。</p>
+        <p class="muted compact">自动同步比赛题单、题号顺序及后台分值。题目 Rating = OJ「在比赛中的题目分值」× 100，例如 19 → 1900；题面无需标注 Rating。分值缺失或格式无效时先按 0，每次同步重新检查。</p>
         <div class="table-scroll"><table><thead><tr><th>题号</th><th>题目 ID</th><th>题名</th><th>Rating</th><th>操作</th></tr></thead><tbody id="problem-rows"></tbody></table></div>
       </section>
       <section class="panel" aria-labelledby="registration-title">
