@@ -70,8 +70,11 @@ function renderProblems() {
   const fragment = document.createDocumentFragment();
   for (const problem of state.config.problems || []) {
     const row = node('tr');
-    cell(row, problem.label || '—'); cell(row, problem.id); cell(row, problem.title || '—', 'problem-title-cell'); cell(row, formatNumber.format(problem.rating ?? 0));
-    const actions = node('td'); actions.append(button('删除', 'remove_problem', {problem_id: String(problem.id)})); row.append(actions); fragment.append(row);
+    cell(row, problem.label || '—'); cell(row, problem.id); cell(row, problem.title || '—', 'problem-title-cell'); cell(row, `${formatNumber.format(problem.rating ?? 0)}${problem.rating_pending ? '（待检测）' : ''}`);
+    const actions = node('td');
+    if (state.config.contest_auto_sync) actions.textContent = '自动同步';
+    else actions.append(button('删除', 'remove_problem', {problem_id: String(problem.id)}));
+    row.append(actions); fragment.append(row);
   }
   for (const item of state.config.pending_problems || []) {
     const problem = typeof item === 'object' ? item : {id: item};
@@ -102,10 +105,10 @@ function renderPlayers() {
     if (starred) status.append(node('span', '打星', 'badge starred'));
     row.append(status);
     const actions = node('td', undefined, 'player-actions');
-    const starButton = button(starred ? '取消打星' : '打星', 'starred', {handle: player.handle, starred: !starred}, '/api/admin/starred');
+    const starButton = button(starred ? '取消打星' : '打星', 'starred', {handle: player.handle, user_id: player.user_id, starred: !starred}, '/api/admin/starred');
     if (player.placeholder) {starButton.disabled = true; starButton.title = '等待可信选手记录后可设置打星';}
     actions.append(starButton);
-    actions.append(button(banned ? '解封' : '封禁', banned ? 'unban_player' : 'ban_player', {handle: player.handle, ...(player.user_id == null ? {} : {user_id: player.user_id})}));
+    actions.append(button(banned ? '解封' : '封禁', banned ? 'unban_player' : 'ban_player', player.user_id == null ? {handle: player.handle} : {user_id: player.user_id}));
     row.append(actions); fragment.append(row);
   }
   if (!fragment.children.length) emptyRow(fragment, 5, query ? '没有找到选手。' : '暂无选手。');
@@ -147,7 +150,10 @@ function renderState() {
     try { const url = new URL(sync.last_run_url); if (url.protocol === 'https:') {runLink.href = url.href; runLink.hidden = false;} } catch (_) { /* No invalid link rendered. */ }
   }
   const modes = {live: '实时采集', standby: '待配置', demo: '演示'};
-  $('config-summary').textContent = `模式：${modes[config.mode] || config.mode || '—'} · 来源：${config.source_scope || '—'}${config.start_at ? ` · ${time(config.start_at)} 至 ${time(config.end_at)}` : ''}`;
+  $('config-summary').textContent = `模式：${modes[config.mode] || config.mode || '—'} · ${config.contest_auto_sync ? `自动同步比赛 ${config.contest_id}` : `来源：${config.source_scope || '—'}`}${config.start_at ? ` · ${time(config.start_at)} 至 ${time(config.end_at)}` : ''}`;
+  if (document.activeElement !== $('contest-id')) $('contest-id').value = config.contest_id || '1317';
+  $('registration-id').disabled = config.contest_auto_sync || actionBusy;
+  $('registration-form').querySelector('button').hidden = config.contest_auto_sync;
   const registrationId = String(config.registration_problem_id || '10595'), registrationMode = config.registration_mode || 'template';
   if (lastRegistrationId === null || $('registration-id').value === lastRegistrationId) $('registration-id').value = registrationId;
   if (lastRegistrationMode === null || $('registration-mode').value === lastRegistrationMode) $('registration-mode').value = registrationMode;
@@ -182,7 +188,6 @@ async function mutate(action, values = {}, path = '/api/admin/action') {
     const result = await request(path, {auth: true, body: {...(path === '/api/admin/action' ? {action} : {}), ...values, revision: state.revision}});
     if (session) {
       message(result.message || '操作已保存，正在更新状态。', true);
-      if (action === 'add_problem') $('problem-id').value = '';
       if (action === 'ban_player') $('ban-handle').value = '';
       if (action === 'roster') $('roster-file').value = '';
       if (action === 'set_registration') lastRegistrationId = null;
@@ -208,7 +213,7 @@ onForm('login-form', async () => {
   finally {$('login-submit').disabled = false;}
 });
 onForm('submission-action-form', event => mutate(event.submitter?.value === 'restore_submission' ? 'restore_submission' : 'ignore_submission', {submission_id: $('manual-submission-id').value.trim()}));
-onForm('add-problem-form', () => mutate('add_problem', {problem_id: $('problem-id').value.trim()}));
+onForm('contest-form', () => mutate('set_contest', {contest_id: $('contest-id').value.trim()}));
 onForm('registration-form', () => mutate('set_registration', {problem_id: $('registration-id').value.trim()}));
 onForm('registration-mode-form', () => mutate('set_registration_mode', {value: $('registration-mode').value}));
 onForm('roster-form', async () => {

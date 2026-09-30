@@ -9,7 +9,7 @@
   <link rel="icon" href="../favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="../style.css?v=363c854c57fe">
   <link rel="stylesheet" href="./admin.css?v=20f079871737">
-  <script src="./admin.js?v=c292f6c30ab3" defer></script>
+  <script src="./admin.js?v=e20bc30115e1" defer></script>
 </head>
 <body>
   <header class="topbar wrap"><h1>国庆赛外榜 · 管理</h1><nav><a href="../">查看榜单</a><button id="logout" class="nav-button" hidden>退出</button></nav></header>
@@ -31,8 +31,8 @@
       </section>
       <p id="config-summary" class="muted"></p>
       <section class="panel" aria-labelledby="problems-title">
-        <div class="section-heading"><h2 id="problems-title">计分题目</h2><form id="add-problem-form" class="inline-form"><label class="sr-only" for="problem-id">题目 ID</label><input id="problem-id" name="problem_id" inputmode="numeric" pattern="[0-9]+" placeholder="题目 ID" required maxlength="20"><button class="primary" type="submit">加入题目</button></form></div>
-        <p class="muted compact">加入后由服务端读取题目 Rating。</p>
+        <div class="section-heading"><h2 id="problems-title">比赛题目</h2><form id="contest-form" class="inline-form"><label for="contest-id">比赛 ID</label><input id="contest-id" name="contest_id" inputmode="numeric" pattern="[0-9]+" value="1317" required maxlength="10"><button class="primary" type="submit">同步比赛</button></form></div>
+        <p class="muted compact">自动同步比赛题单、题号顺序和题面 Rating。未标注 Rating 的题目先按 0 处理，每次同步重新检查；题单变更请在 OJ 比赛中操作。</p>
         <div class="table-scroll"><table><thead><tr><th>题号</th><th>题目 ID</th><th>题名</th><th>Rating</th><th>操作</th></tr></thead><tbody id="problem-rows"></tbody></table></div>
       </section>
       <section class="panel" aria-labelledby="registration-title">

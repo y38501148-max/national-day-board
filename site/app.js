@@ -8,6 +8,7 @@ let configReady = false, boardProvider = '', checkedAt = null, cacheUpdatedAt = 
 const PAGE_SIZE = 30;
 const RESULT_LABELS = {accepted: '满分', partial: '部分分', failed: '失败', pending: '待评测', unattempted: '未尝试'};
 const displayProblems = () => board.registration_problem ? [board.registration_problem, ...board.problems] : board.problems;
+const playerKey = player => player.player_id || player.handle.toLowerCase();
 function el(tag, text, className) {
   const node = document.createElement(tag);
   if (text !== undefined) node.textContent = text;
@@ -69,7 +70,7 @@ function render() {
   const positions = new Map([...previousRows].map(([handle, row]) => [handle, row.getBoundingClientRect().top]));
   const visibleRows = [];
   for (const player of filtered.slice(start, start + PAGE_SIZE)) {
-    const key = player.handle.toLowerCase(), signature = JSON.stringify([player, problemSignature, boardView]);
+    const key = playerKey(player), signature = JSON.stringify([player, problemSignature, boardView]);
     let row = previousRows.get(key);
     if (row?.dataset.signature === signature) {
       fragment.append(row); visibleRows.push(row); continue;
@@ -85,7 +86,7 @@ function render() {
     const nameCell = el('th', undefined, 'fixed-handle'); nameCell.scope = 'row'; const button = el('button', undefined, 'player');
     button.append(el('span', player.handle));
     button.title = `查看 ${player.handle} 的贡献明细`;
-    button.addEventListener('click', () => openDetail(player.handle)); nameCell.append(button); row.append(nameCell);
+    button.addEventListener('click', () => openDetail(key)); nameCell.append(button); row.append(nameCell);
     row.append(el('td', number.format(player.rating), 'fixed-rating number rating'), el('td', player.full, 'fixed-solved number'));
     const results = new Map((player.problem_results || []).map(result => [String(result.problem_id), result]));
     for (const problem of displayProblems()) row.append(problemCell(problem, results.get(String(problem.id))));
@@ -124,7 +125,8 @@ function mergeDelta(previous, delta, targetVersion) {
   const keyOf = player => {
     if (!player || typeof player.handle !== 'string' || !player.handle || !Number.isSafeInteger(player.rating) || player.rating < 0
         || !Number.isSafeInteger(player.full) || player.full < 0 || (player.starred !== undefined && typeof player.starred !== 'boolean') || (player.problem_results !== undefined && !Array.isArray(player.problem_results))) throw new Error('Invalid participant');
-    return player.handle.toLowerCase();
+    if (player.player_id !== undefined && !/^p_[a-f0-9]{32}$/.test(player.player_id)) throw new Error('Invalid player key');
+    return playerKey(player);
   };
   const rows = new Map();
   for (const player of previous.participants) {
@@ -142,7 +144,7 @@ function mergeDelta(previous, delta, targetVersion) {
   const ranks = new Map(), officialCount = [...rows.values()].filter(player => player.starred !== true).length;
   for (const value of delta.ranks) {
     if (!value || typeof value.handle !== 'string' || !value.handle) throw new Error('Invalid delta rank');
-    const key = value.handle.toLowerCase(), player = rows.get(key);
+    const key = playerKey(value), player = rows.get(key);
     if (!player || ranks.has(key) || !Number.isSafeInteger(value.rank) || value.rank < 1 || value.rank > rows.size
         || (player.starred === true ? value.official_rank !== null
             : !Number.isSafeInteger(value.official_rank) || value.official_rank < 1 || value.official_rank > officialCount)) throw new Error('Invalid delta rank');
@@ -223,17 +225,18 @@ async function load() {
     if (!board) $('results').textContent = '等待数据恢复';
   } finally { busy = false; }
 }
-async function openDetail(handle) {
-  const current = ++detailRequest; detailHandle = handle; $('detail-title').textContent = handle;
+async function openDetail(playerId) {
+  const current = ++detailRequest; detailHandle = playerId;
+  $('detail-title').textContent = board.participants.find(item => playerKey(item) === playerId)?.handle || '';
   $('detail-content').replaceChildren(el('p', '正在加载贡献明细…', 'loading'));
   if (!$('detail-dialog').open) $('detail-dialog').showModal();
   try {
     const snapshot = board.generated_at;
-    const key = encodeURIComponent(handle.toLowerCase());
+    const key = encodeURIComponent(playerId);
     const read = async url => {
       const detail = await json(url);
-      const player = board.participants.find(item => item.handle.toLowerCase() === handle.toLowerCase());
-      if (detail.generated_at !== snapshot || !Array.isArray(detail.problems) || !player || detail.rating !== player.rating || detail.rank !== player.rank || (detail.starred === true) !== (player.starred === true) || (player.official_rank !== undefined && detail.official_rank !== player.official_rank)) throw new Error('Snapshot mismatch');
+      const player = board.participants.find(item => playerKey(item) === playerId);
+      if (detail.generated_at !== snapshot || !Array.isArray(detail.problems) || !player || playerKey(detail) !== playerId || detail.handle !== player.handle || detail.rating !== player.rating || detail.rank !== player.rank || (detail.starred === true) !== (player.starred === true) || (player.official_rank !== undefined && detail.official_rank !== player.official_rank)) throw new Error('Snapshot mismatch');
       return detail;
     };
     let detail;
