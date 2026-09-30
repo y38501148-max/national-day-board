@@ -164,7 +164,17 @@ async function load() {
             incoming = mergeDelta(board, delta, version.generated_at);
           } catch (_) { /* A missing delta or version gap requires a complete snapshot. */ }
         }
-        if (!incoming) incoming = await json(`${apiBase}/api/live/board`);
+        if (!incoming) {
+          incoming = await json(`${apiBase}/api/live/board`);
+          // Public scores may remain unchanged for hours. Show the current OJ
+          // check on first load rather than waiting for the next browser poll.
+          if (!liveCheckedAt) {
+            try {
+              const version = await json(`${apiBase}/api/live/version`);
+              if (version.generated_at === incoming.generated_at) liveCheckedAt = version.checked_at;
+            } catch (_) { /* The score snapshot remains available. */ }
+          }
+        }
         if (!Array.isArray(incoming.participants) || !Array.isArray(incoming.problems) || incoming.schema_version !== 1) throw new Error('Invalid live data');
         provider = 'live';
       } catch (_) {incoming = await json('./data/board.json');}
