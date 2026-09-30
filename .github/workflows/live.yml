@@ -4,6 +4,10 @@ on:
     - cron: '*/5 * * * *'
   workflow_dispatch:
     inputs:
+      continuation:
+        description: Internal automatic continuation (respects LIVE_SYNC_ENABLED)
+        type: boolean
+        default: false
       one_shot:
         description: Collect and publish once, then exit
         type: boolean
@@ -19,12 +23,13 @@ on:
         default: '30'
 permissions:
   contents: read
+  actions: write
 concurrency:
   group: national-day-live
   cancel-in-progress: false
 jobs:
   collect:
-    if: github.repository == 'y38501148-max/national-day-board' && (github.event_name == 'workflow_dispatch' || vars.LIVE_SYNC_ENABLED == 'true')
+    if: github.repository == 'y38501148-max/national-day-board' && ((github.event_name == 'workflow_dispatch' && inputs.continuation != true) || vars.LIVE_SYNC_ENABLED == 'true')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -76,3 +81,10 @@ jobs:
           if [ -n "$CYCLES" ]; then args+=(--cycles "$CYCLES"); fi
           args+=(--interval "${POLL_SECONDS:-30}")
           python3 -u deploy/live_sync.py "${args[@]}"
+      - name: Start the next continuous collection session
+        if: success() && vars.LIVE_SYNC_ENABLED == 'true' && inputs.one_shot != true && (inputs.cycles == '' || inputs.cycles == null)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          POLL_SECONDS: ${{ inputs.poll_seconds }}
+        run: gh workflow run live.yml --ref main -f continuation=true -f poll_seconds="${POLL_SECONDS:-30}"
