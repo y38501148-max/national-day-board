@@ -24,7 +24,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   collect:
-    if: github.event_name == 'workflow_dispatch' || vars.LIVE_SYNC_ENABLED == 'true'
+    if: github.repository == 'y38501148-max/national-day-board' && (github.event_name == 'workflow_dispatch' || vars.LIVE_SYNC_ENABLED == 'true')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
