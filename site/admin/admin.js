@@ -56,10 +56,10 @@ async function request(path, {body, auth = false} = {}) {
   if (!response.ok || result.ok === false) throw new Error(typeof result.message === 'string' ? result.message : response.status === 401 ? '账号或密码错误，或登录已失效。' : `操作失败（${response.status}）。`);
   return result;
 }
-function button(text, action, values) {
+function button(text, action, values, path) {
   const element = node('button', text, 'secondary'); element.type = 'button';
   element.disabled = actionBusy;
-  element.addEventListener('click', () => mutate(action, values));
+  element.addEventListener('click', () => mutate(action, values, path));
   return element;
 }
 function cell(row, text, className) { row.append(node('td', text, className)); }
@@ -89,16 +89,24 @@ function renderPlayers() {
   const bannedHandles = new Set((moderation.banned_handles || []).map(handle => String(handle).toLowerCase()));
   const players = [...(state.snapshot.participants || [])];
   for (const handle of moderation.banned_handles || []) {
-    if (!players.some(player => String(player.handle).toLowerCase() === String(handle).toLowerCase())) players.push({handle, status: 'banned'});
+    if (!players.some(player => String(player.handle).toLowerCase() === String(handle).toLowerCase())) players.push({handle, status: 'banned', placeholder: true});
   }
   const query = $('player-search').value.trim().toLowerCase();
   const matches = players.filter(player => [player.handle, player.name, player.student_id, player.user_id].some(value => String(value ?? '').toLowerCase().includes(query)));
   const fragment = document.createDocumentFragment();
   for (const player of matches.slice(0, 100)) {
+    const starred = player.starred === true;
     const banned = player.status === 'banned' || bannedUsers.has(String(player.user_id)) || bannedHandles.has(String(player.handle).toLowerCase());
     const row = node('tr'); cell(row, player.handle || '—'); cell(row, player.name || '待获取', 'identity-name'); cell(row, player.student_id || '—', 'identity-student');
-    const status = node('td'); status.append(node('span', banned ? '已封禁' : player.status === 'pending' ? '待处理' : '正常', `badge${banned ? ' banned' : ''}`)); row.append(status);
-    const actions = node('td'); actions.append(button(banned ? '解封' : '封禁', banned ? 'unban_player' : 'ban_player', {handle: player.handle, ...(player.user_id == null ? {} : {user_id: player.user_id})})); row.append(actions); fragment.append(row);
+    const status = node('td'); status.append(node('span', banned ? '已封禁' : player.status === 'pending' ? '待处理' : '正常', `badge${banned ? ' banned' : ''}`));
+    if (starred) status.append(node('span', '打星', 'badge starred'));
+    row.append(status);
+    const actions = node('td', undefined, 'player-actions');
+    const starButton = button(starred ? '取消打星' : '打星', 'starred', {handle: player.handle, starred: !starred}, '/api/admin/starred');
+    if (player.placeholder) {starButton.disabled = true; starButton.title = '等待可信选手记录后可设置打星';}
+    actions.append(starButton);
+    actions.append(button(banned ? '解封' : '封禁', banned ? 'unban_player' : 'ban_player', {handle: player.handle, ...(player.user_id == null ? {} : {user_id: player.user_id})}));
+    row.append(actions); fragment.append(row);
   }
   if (!fragment.children.length) emptyRow(fragment, 5, query ? '没有找到选手。' : '暂无选手。');
   $('player-rows').replaceChildren(fragment);

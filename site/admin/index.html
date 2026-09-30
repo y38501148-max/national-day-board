@@ -7,9 +7,9 @@
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https://national-day-board-admin-api.chic-pond-5383.chatgpt.site; object-src 'none'; base-uri 'self'; form-action 'none'">
   <title>国庆赛外榜 · 管理</title>
   <link rel="icon" href="../favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="../style.css?v=f157091dd5ea">
-  <link rel="stylesheet" href="./admin.css?v=3846b6beda5c">
-  <script src="./admin.js?v=9c6a6f118cba" defer></script>
+  <link rel="stylesheet" href="../style.css?v=363c854c57fe">
+  <link rel="stylesheet" href="./admin.css?v=20f079871737">
+  <script src="./admin.js?v=c292f6c30ab3" defer></script>
 </head>
 <body>
   <header class="topbar wrap"><h1>国庆赛外榜 · 管理</h1><nav><a href="../">查看榜单</a><button id="logout" class="nav-button" hidden>退出</button></nav></header>
@@ -48,7 +48,7 @@
         <div class="section-heading"><h2 id="participants-title">选手</h2><form id="ban-player-form" class="inline-form"><label class="sr-only" for="ban-handle">公开榜单 ID</label><input id="ban-handle" name="handle" placeholder="公开榜单 ID" required maxlength="40" autocomplete="off"><button class="secondary" type="submit">封禁</button></form></div>
         <label class="search admin-search"><input id="player-search" type="search" placeholder="榜单 ID、姓名或学号" aria-label="搜索选手的公开 ID、姓名、学号或 OJ ID" autocomplete="off"></label>
         <p id="player-count" class="muted compact"></p>
-        <div class="table-scroll"><table><thead><tr><th>公开榜单 ID</th><th>真实姓名</th><th>学号</th><th>状态</th><th>操作</th></tr></thead><tbody id="player-rows"></tbody></table></div>
+        <div class="table-scroll"><table><thead><tr><th>公开榜单 ID</th><th>真实姓名</th><th>学号</th><th>状态 / 打星</th><th>操作</th></tr></thead><tbody id="player-rows"></tbody></table></div>
       </section>
       <section class="panel" aria-labelledby="submissions-title">
         <div class="section-heading"><h2 id="submissions-title">提交记录</h2><label class="search admin-search"><input id="submission-search" type="search" placeholder="提交 / 题目 / 选手 / 姓名 / 学号" aria-label="搜索提交记录、姓名或学号" autocomplete="off"></label></div>

@@ -7,8 +7,8 @@
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https://national-day-board-admin-api.chic-pond-5383.chatgpt.site; object-src 'none'; base-uri 'self'">
   <title>国庆挑战 · 娱乐外榜</title>
   <link rel="icon" href="./favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="./style.css?v=f157091dd5ea">
-  <script src="./app.js?v=d9f2b95ec06a" defer></script>
+  <link rel="stylesheet" href="./style.css?v=363c854c57fe">
+  <script src="./app.js?v=9f33b4e7ff81" defer></script>
 </head>
 <body>
   <header class="topbar wrap">
@@ -19,7 +19,7 @@
     <div id="mode-banner" class="banner" hidden></div>
     <section class="board-section" aria-labelledby="board-heading">
       <div class="board-header"><div class="stats"><span>选手 <strong id="registered">—</strong></span><span>计分题 <strong id="problem-count">—</strong></span><span>更新 <time id="updated">等待数据</time></span><span id="freshness"></span></div><label class="search"><input id="search" type="search" placeholder="搜索公开榜单 ID" aria-label="搜索公开榜单 ID" autocomplete="off" maxlength="40"></label></div>
-      <div class="board-toolbar"><span id="results" role="status">正在加载榜单…</span></div>
+      <div class="board-toolbar"><div class="board-tabs" role="group" aria-label="榜单范围"><button id="all-board" class="board-tab" type="button" aria-pressed="true">全部榜单</button><button id="official-board" class="board-tab" type="button" aria-pressed="false">正式榜单</button></div><span id="results" role="status">正在加载榜单…</span></div>
       <div id="error" class="error" role="status" hidden></div>
       <div class="table-scroll board-scroll" tabindex="0" role="region" aria-label="比赛榜单，可左右滚动"><table class="board-table" id="board-table"><caption class="sr-only">国庆赛榜单</caption><colgroup id="board-columns"></colgroup><thead><tr id="board-head"></tr></thead><tbody id="rows"></tbody></table></div>
       <div id="empty" class="empty" hidden>没有找到该 ID，试试只输入其中一部分。</div>

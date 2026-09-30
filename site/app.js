@@ -4,7 +4,7 @@ const number = new Intl.NumberFormat('zh-CN', {maximumFractionDigits: 0});
 const decimal = new Intl.NumberFormat('zh-CN', {maximumFractionDigits: 2});
 let board, filtered = [], page = 0, detailRequest = 0, busy = false;
 let boardSignature = '', problemSignature = '', apiBase = '', detailHandle = '';
-let configReady = false, boardProvider = '', checkedAt = null, cacheUpdatedAt = 0;
+let configReady = false, boardProvider = '', checkedAt = null, cacheUpdatedAt = 0, boardView = 'all';
 const PAGE_SIZE = 30;
 const RESULT_LABELS = {accepted: '满分', partial: '部分分', failed: '失败', pending: '待评测', unattempted: '未尝试'};
 const displayProblems = () => board.registration_problem ? [board.registration_problem, ...board.problems] : board.problems;
@@ -21,7 +21,9 @@ async function json(url) {
 }
 function filter(resetPage = true) {
   const query = $('search').value.trim().toLowerCase();
-  filtered = board.participants.filter(p => p.handle.toLowerCase().includes(query));
+  const players = boardView === 'official' ? board.participants.filter(player => player.starred !== true) : board.participants;
+  $('registered').textContent = number.format(players.length);
+  filtered = players.filter(p => p.handle.toLowerCase().includes(query));
   if (resetPage) page = 0;
   page = Math.min(page, Math.max(0, Math.ceil(filtered.length / PAGE_SIZE) - 1));
   render();
@@ -67,14 +69,19 @@ function render() {
   const positions = new Map([...previousRows].map(([handle, row]) => [handle, row.getBoundingClientRect().top]));
   const visibleRows = [];
   for (const player of filtered.slice(start, start + PAGE_SIZE)) {
-    const key = player.handle.toLowerCase(), signature = JSON.stringify([player, problemSignature]);
+    const key = player.handle.toLowerCase(), signature = JSON.stringify([player, problemSignature, boardView]);
     let row = previousRows.get(key);
     if (row?.dataset.signature === signature) {
       fragment.append(row); visibleRows.push(row); continue;
     }
     row = row || el('tr'); row.replaceChildren();
     row.dataset.handle = key; row.dataset.signature = signature;
-    const rankCell = el('td', undefined, 'fixed-rank'); rankCell.append(el('span', player.rank, player.rank <= 3 ? 'rank top' : 'rank')); row.append(rankCell);
+    const rank = boardView === 'official' ? player.official_rank ?? player.rank : player.rank;
+    const starred = player.starred === true;
+    const rankCell = el('td', undefined, 'fixed-rank');
+    rankCell.append(el('span', starred ? '*' : rank, starred ? 'rank starred' : rank <= 3 ? 'rank top' : 'rank'));
+    if (starred) { rankCell.title = '打星选手'; rankCell.setAttribute('aria-label', '打星选手'); }
+    row.append(rankCell);
     const nameCell = el('th', undefined, 'fixed-handle'); nameCell.scope = 'row'; const button = el('button', undefined, 'player');
     button.append(el('span', player.handle));
     button.title = `查看 ${player.handle} 的贡献明细`;
@@ -93,7 +100,8 @@ function render() {
     }
   }
   $('empty').hidden = filtered.length !== 0;
-  $('empty').textContent = board.participants.length ? '没有找到该 ID，试试只输入其中一部分。' : '暂无选手。';
+  const hasPlayers = board.participants.some(player => boardView === 'all' || player.starred !== true);
+  $('empty').textContent = hasPlayers ? '没有找到该 ID，试试只输入其中一部分。' : boardView === 'official' ? '暂无正式选手。' : '暂无选手。';
   $('results').textContent = `共 ${number.format(filtered.length)} 位选手${$('search').value.trim() ? '符合搜索条件' : ''}`;
   $('page-label').textContent = filtered.length ? `${start + 1}–${Math.min(start + PAGE_SIZE, filtered.length)} / ${number.format(filtered.length)}` : '0 / 0';
   $('prev').disabled = page === 0; $('next').disabled = start + PAGE_SIZE >= filtered.length;
@@ -112,10 +120,10 @@ function mergeDelta(previous, delta, targetVersion) {
   if (!delta || delta.base_generated_at !== previous.generated_at || delta.generated_at !== targetVersion
       || !delta.metadata || typeof delta.metadata !== 'object' || Array.isArray(delta.metadata)
       || 'participants' in delta.metadata || delta.metadata.generated_at !== targetVersion
-      || !Array.isArray(delta.upsert) || !Array.isArray(delta.removed) || !Array.isArray(delta.order)) throw new Error('Invalid delta');
+      || !Array.isArray(delta.upsert) || !Array.isArray(delta.removed) || !Array.isArray(delta.order) || !Array.isArray(delta.ranks)) throw new Error('Invalid delta');
   const keyOf = player => {
     if (!player || typeof player.handle !== 'string' || !player.handle || !Number.isSafeInteger(player.rating) || player.rating < 0
-        || !Number.isSafeInteger(player.full) || player.full < 0 || (player.problem_results !== undefined && !Array.isArray(player.problem_results))) throw new Error('Invalid participant');
+        || !Number.isSafeInteger(player.full) || player.full < 0 || (player.starred !== undefined && typeof player.starred !== 'boolean') || (player.problem_results !== undefined && !Array.isArray(player.problem_results))) throw new Error('Invalid participant');
     return player.handle.toLowerCase();
   };
   const rows = new Map();
@@ -130,15 +138,23 @@ function mergeDelta(previous, delta, targetVersion) {
   for (const player of delta.upsert) {
     const key = keyOf(player); if (updated.has(key) || removed.has(key)) throw new Error('Duplicate delta participant'); updated.add(key); rows.set(key, player);
   }
-  if (delta.order.length !== rows.size) throw new Error('Incomplete delta order');
-  const ordered = [], seen = new Set(); let previousRating = Infinity, rank = 0;
+  if (delta.order.length !== rows.size || delta.ranks.length !== rows.size) throw new Error('Incomplete delta order or ranks');
+  const ranks = new Map(), officialCount = [...rows.values()].filter(player => player.starred !== true).length;
+  for (const value of delta.ranks) {
+    if (!value || typeof value.handle !== 'string' || !value.handle) throw new Error('Invalid delta rank');
+    const key = value.handle.toLowerCase(), player = rows.get(key);
+    if (!player || ranks.has(key) || !Number.isSafeInteger(value.rank) || value.rank < 1 || value.rank > rows.size
+        || (player.starred === true ? value.official_rank !== null
+            : !Number.isSafeInteger(value.official_rank) || value.official_rank < 1 || value.official_rank > officialCount)) throw new Error('Invalid delta rank');
+    ranks.set(key, value);
+  }
+  const ordered = [], seen = new Set(); let previousRating = Infinity;
   for (const key of delta.order) {
     if (typeof key !== 'string' || key !== key.toLowerCase() || seen.has(key) || !rows.has(key)) throw new Error('Invalid delta order');
-    seen.add(key); const player = rows.get(key);
-    if (player.rating > previousRating) throw new Error('Invalid rating order');
-    if (player.rating !== previousRating) rank = ordered.length + 1;
+    seen.add(key); const player = rows.get(key), value = ranks.get(key);
+    if (player.rating > previousRating || !value) throw new Error('Invalid rating order');
     previousRating = player.rating;
-    ordered.push(player.rank === rank ? player : {...player, rank});
+    ordered.push(player.rank === value.rank && player.official_rank === value.official_rank ? player : {...player, rank: value.rank, official_rank: value.official_rank});
   }
   const incoming = {...delta.metadata, participants: ordered};
   if (incoming.schema_version !== 1 || !Array.isArray(incoming.problems) || typeof incoming.title !== 'string'
@@ -185,7 +201,7 @@ async function load() {
     const rowsChanged = nextSignature !== boardSignature, problemsChanged = nextProblemSignature !== problemSignature;
     const previousSnapshot = board?.generated_at;
     board = incoming; boardProvider = provider; checkedAt = null; cacheUpdatedAt = Date.now(); boardSignature = nextSignature; problemSignature = nextProblemSignature;
-    document.title = board.title; $('board-heading').textContent = board.title; $('registered').textContent = number.format(board.statistics.registered); $('problem-count').textContent = number.format(board.statistics.problems);
+    document.title = board.title; $('board-heading').textContent = board.title; $('problem-count').textContent = number.format(board.statistics.problems);
     updateTime(provider === 'live' ? liveCheckedAt : null);
     $('mode-banner').hidden = board.mode !== 'demo';
     $('mode-banner').textContent = `演示榜：以下 ${number.format(board.statistics.registered)} 位选手及所有成绩均为合成数据，用于预览与验证。真实比赛尚未接入，演示日期不代表正式赛程。`;
@@ -217,7 +233,7 @@ async function openDetail(handle) {
     const read = async url => {
       const detail = await json(url);
       const player = board.participants.find(item => item.handle.toLowerCase() === handle.toLowerCase());
-      if (detail.generated_at !== snapshot || !Array.isArray(detail.problems) || !player || detail.rating !== player.rating || detail.rank !== player.rank) throw new Error('Snapshot mismatch');
+      if (detail.generated_at !== snapshot || !Array.isArray(detail.problems) || !player || detail.rating !== player.rating || detail.rank !== player.rank || (detail.starred === true) !== (player.starred === true) || (player.official_rank !== undefined && detail.official_rank !== player.official_rank)) throw new Error('Snapshot mismatch');
       return detail;
     };
     let detail;
@@ -228,7 +244,9 @@ async function openDetail(handle) {
     if (current !== detailRequest) return;
     if (snapshot !== board.generated_at) throw new Error('Snapshot changed');
     const container = document.createDocumentFragment(), stats = el('div', undefined, 'detail-stats');
-    for (const [label, value] of [['Rating', number.format(detail.rating)], ['排名', `#${detail.rank}`], ['加权贡献', decimal.format(detail.raw_contribution)], ['达标 / 满分', `${detail.solved} / ${detail.full}`]]) {
+    const rank = boardView === 'official' ? detail.official_rank ?? detail.rank : detail.rank;
+    const rankLabel = detail.starred === true ? '*' : `#${rank}`;
+    for (const [label, value] of [['Rating', number.format(detail.rating)], [boardView === 'official' ? '正式排名' : '全部排名', rankLabel], ['加权贡献', decimal.format(detail.raw_contribution)], ['达标 / 满分', `${detail.solved} / ${detail.full}`]]) {
       const item = el('div'); item.append(el('span', label), el('strong', value)); stats.append(item);
     }
     container.append(stats);
@@ -248,6 +266,16 @@ async function openDetail(handle) {
     $('detail-content').replaceChildren(container);
   } catch (_) { if (current === detailRequest) $('detail-content').replaceChildren(el('p', '该选手当前快照的明细暂时不可用，请稍后重试。')); }
 }
+function selectBoard(view) {
+  if (view === boardView) return;
+  boardView = view;
+  $('all-board').setAttribute('aria-pressed', String(view === 'all'));
+  $('official-board').setAttribute('aria-pressed', String(view === 'official'));
+  if (board) filter();
+  if ($('detail-dialog').open && detailHandle) openDetail(detailHandle);
+}
+$('all-board').addEventListener('click', () => selectBoard('all'));
+$('official-board').addEventListener('click', () => selectBoard('official'));
 $('search').addEventListener('input', () => {if (board) filter();});
 $('prev').addEventListener('click', () => {if (page > 0) {page--; render();}});
 $('next').addEventListener('click', () => {if ((page + 1) * PAGE_SIZE < filtered.length) {page++; render();}});

@@ -22,3 +22,5 @@
 button:focus-visible,input:focus-visible,a:focus-visible,.board-scroll:focus-visible{outline:2px solid var(--link)}
 @media(max-width:720px){.board-table{--rank-width:42px;--handle-width:136px;--rating-width:64px;--solved-width:56px;--problem-width:84px}.board-table th,.board-table td{padding:8px 6px;font-size:11px}.board-table tbody th,.board-table .player{font-size:12px}.result-score{font-size:12px}.board-toolbar{font-size:11px}}
 @media(max-width:400px){.board-table{--rank-width:34px;--handle-width:104px;--rating-width:60px;--solved-width:44px}.board-table th,.board-table td{padding:8px 4px}.board-table .fixed-rank,.board-table .fixed-solved{font-size:10px}}
+
+.board-toolbar{align-items:center}.board-tabs{display:flex;gap:4px}.board-tab{border:1px solid transparent;border-radius:4px;background:transparent;padding:5px 10px;font-size:12px;color:var(--muted)}.board-tab[aria-pressed=true]{border-color:var(--line);background:#f6f8fa;color:var(--ink);font-weight:600}.rank.starred{font-size:18px;color:#87631b}.board-tab:focus-visible{outline:2px solid var(--link)}

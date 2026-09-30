@@ -5,3 +5,5 @@
 
 .panel td.identity-student{white-space:nowrap;font-family:var(--mono);font-variant-numeric:tabular-nums}.panel td.identity-name{white-space:normal;min-width:90px}#player-search,#submission-search{width:300px}
 @media(max-width:720px){#player-search,#submission-search{width:100%}}
+
+.badge.starred{background:#fff6dd;color:#765519}.badge+.badge{margin-left:5px}.player-actions .secondary+.secondary{margin-left:6px}
