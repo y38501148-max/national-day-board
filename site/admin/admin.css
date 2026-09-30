@@ -7,3 +7,4 @@
 @media(max-width:720px){#player-search,#submission-search{width:100%}}
 
 .badge.starred{background:#fff6dd;color:#765519}.badge+.badge{margin-left:5px}.player-actions .secondary+.secondary{margin-left:6px}
+.admin-pagination{display:flex;align-items:center;justify-content:flex-end;gap:12px;flex-wrap:wrap;margin-top:12px;font-size:12px}

@@ -2,6 +2,8 @@
 const $ = id => document.getElementById(id);
 const SESSION_KEY = 'national-day-board-admin';
 const formatNumber = new Intl.NumberFormat('zh-CN', {maximumFractionDigits: 2});
+const PAGE_SIZE = 10;
+const listPages = {player: 0, submission: 0};
 let lastRegistrationId = null, lastRegistrationMode = null;
 let apiBase = '', session = null, state = null, stateBusy = false, actionBusy = false, expiryTimer;
 function node(tag, text, className) {
@@ -22,6 +24,7 @@ function time(value) {
 }
 function clearSession(text = '') {
   session = null; state = null; clearTimeout(expiryTimer);
+  listPages.player = 0; listPages.submission = 0;
   sessionStorage.removeItem(SESSION_KEY);
   $('workspace').hidden = true; $('login-panel').hidden = false; $('logout').hidden = true;
   $('password').value = '';
@@ -66,6 +69,15 @@ function cell(row, text, className) { row.append(node('td', text, className)); }
 function emptyRow(body, columns, text) {
   const row = node('tr'), item = node('td', text, 'muted'); item.colSpan = columns; row.append(item); body.append(row);
 }
+function pageRows(kind, matches) {
+  const pages = Math.ceil(matches.length / PAGE_SIZE);
+  listPages[kind] = Math.min(listPages[kind], Math.max(0, pages - 1));
+  const start = listPages[kind] * PAGE_SIZE;
+  $(`${kind}-page-label`).textContent = matches.length ? `第 ${listPages[kind] + 1} / ${pages} 页 · ${start + 1}–${Math.min(start + PAGE_SIZE, matches.length)} / ${matches.length}` : '0 / 0';
+  $(`${kind}-prev`).disabled = actionBusy || listPages[kind] === 0;
+  $(`${kind}-next`).disabled = actionBusy || start + PAGE_SIZE >= matches.length;
+  return matches.slice(start, start + PAGE_SIZE);
+}
 function renderProblems() {
   const fragment = document.createDocumentFragment();
   for (const problem of state.config.problems || []) {
@@ -97,7 +109,7 @@ function renderPlayers() {
   const query = $('player-search').value.trim().toLowerCase();
   const matches = players.filter(player => [player.handle, player.name, player.student_id, player.user_id].some(value => String(value ?? '').toLowerCase().includes(query)));
   const fragment = document.createDocumentFragment();
-  for (const player of matches.slice(0, 100)) {
+  for (const player of pageRows('player', matches)) {
     const starred = player.starred === true;
     const banned = player.status === 'banned' || bannedUsers.has(String(player.user_id)) || bannedHandles.has(String(player.handle).toLowerCase());
     const row = node('tr'); cell(row, player.handle || '—'); cell(row, player.name || '待获取', 'identity-name'); cell(row, player.student_id || '—', 'identity-student');
@@ -113,7 +125,7 @@ function renderPlayers() {
   }
   if (!fragment.children.length) emptyRow(fragment, 5, query ? '没有找到选手。' : '暂无选手。');
   $('player-rows').replaceChildren(fragment);
-  $('player-count').textContent = `${matches.length} 位选手${matches.length > 100 ? ' · 显示前 100 位，请搜索定位' : ''}`;
+  $('player-count').textContent = `${matches.length} 位选手 · 每页 ${PAGE_SIZE} 行`;
 }
 function renderSubmissions() {
   const ignored = new Set((state.config.moderation?.ignored_submission_ids || []).map(String));
@@ -128,7 +140,7 @@ function renderSubmissions() {
     return [submission.id, submission.handle, submission.problem_id, submission.user_id, submission.name, submission.student_id, player?.name, player?.student_id].some(value => String(value ?? '').toLowerCase().includes(query));
   }).slice().sort((a, b) => Date.parse(b.created_at) - Date.parse(a.created_at));
   const fragment = document.createDocumentFragment();
-  for (const submission of matches.slice(0, 100)) {
+  for (const submission of pageRows('submission', matches)) {
     const isIgnored = submission.ignored === true || ignored.has(String(submission.id));
     const row = node('tr', undefined, isIgnored ? 'status-ignored' : '');
     cell(row, submission.id); cell(row, submission.handle || '未注册'); cell(row, submission.problem_id); cell(row, String(submission.result ?? '—')); cell(row, submission.score == null ? '—' : formatNumber.format(submission.score)); cell(row, time(submission.created_at));
@@ -136,7 +148,7 @@ function renderSubmissions() {
   }
   if (!fragment.children.length) emptyRow(fragment, 7, query ? '没有找到提交记录。' : '暂无提交记录。');
   $('submission-rows').replaceChildren(fragment);
-  $('submission-count').textContent = `${matches.length} 条记录${matches.length > 100 ? ' · 显示最近 100 条，请搜索定位' : ''}`;
+  $('submission-count').textContent = `${matches.length} 条记录 · 每页 ${PAGE_SIZE} 行`;
 }
 function renderState() {
   const config = state.config, sync = state.sync || {};
@@ -228,8 +240,15 @@ onForm('roster-form', async () => {
 onForm('ban-player-form', () => mutate('ban_player', {handle: $('ban-handle').value.trim()}));
 $('logout').addEventListener('click', () => {clearSession(); message('已退出。', true);});
 $('sync').addEventListener('click', () => mutate('sync'));
-$('player-search').addEventListener('input', () => {if (state) renderPlayers();});
-$('submission-search').addEventListener('input', () => {if (state) renderSubmissions();});
+for (const [kind, renderList] of [['player', renderPlayers], ['submission', renderSubmissions]]) {
+  $(`${kind}-search`).addEventListener('input', () => {listPages[kind] = 0; if (state) renderList();});
+  for (const [direction, step] of [['prev', -1], ['next', 1]]) {
+    $(`${kind}-${direction}`).addEventListener('click', () => {
+      if (!state || actionBusy) return;
+      listPages[kind] = Math.max(0, listPages[kind] + step); renderList();
+    });
+  }
+}
 document.addEventListener('visibilitychange', () => {if (!document.hidden) refreshState({silent: true});});
 setInterval(() => {if (!document.hidden) refreshState({silent: true});}, 10000);
 async function initialize() {

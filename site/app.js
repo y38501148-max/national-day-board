@@ -5,7 +5,7 @@ const decimal = new Intl.NumberFormat('zh-CN', {maximumFractionDigits: 2});
 let board, filtered = [], page = 0, detailRequest = 0, busy = false;
 let boardSignature = '', problemSignature = '', apiBase = '', detailHandle = '';
 let configReady = false, boardProvider = '', checkedAt = null, cacheUpdatedAt = 0, boardView = 'all';
-const PAGE_SIZE = 30;
+const PAGE_SIZE = 10;
 const RESULT_LABELS = {accepted: '满分', partial: '部分分', failed: '失败', pending: '待评测', unattempted: '未尝试'};
 const displayProblems = () => board.registration_problem ? [board.registration_problem, ...board.problems] : board.problems;
 const playerKey = player => player.player_id || player.handle.toLowerCase();

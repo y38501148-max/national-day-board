@@ -8,8 +8,8 @@
   <title>国庆赛外榜 · 管理</title>
   <link rel="icon" href="../favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="../style.css?v=363c854c57fe">
-  <link rel="stylesheet" href="./admin.css?v=20f079871737">
-  <script src="./admin.js?v=e20bc30115e1" defer></script>
+  <link rel="stylesheet" href="./admin.css?v=2a449abe081a">
+  <script src="./admin.js?v=8b974332308e" defer></script>
 </head>
 <body>
   <header class="topbar wrap"><h1>国庆赛外榜 · 管理</h1><nav><a href="../">查看榜单</a><button id="logout" class="nav-button" hidden>退出</button></nav></header>
@@ -49,12 +49,14 @@
         <label class="search admin-search"><input id="player-search" type="search" placeholder="榜单 ID、姓名或学号" aria-label="搜索选手的公开 ID、姓名、学号或 OJ ID" autocomplete="off"></label>
         <p id="player-count" class="muted compact"></p>
         <div class="table-scroll"><table><thead><tr><th>公开榜单 ID</th><th>真实姓名</th><th>学号</th><th>状态 / 打星</th><th>操作</th></tr></thead><tbody id="player-rows"></tbody></table></div>
+        <nav class="admin-pagination" aria-label="选手分页"><button id="player-prev" class="secondary" type="button" disabled>← 上一页</button><span id="player-page-label" class="muted" aria-live="polite">0 / 0</span><button id="player-next" class="secondary" type="button" disabled>下一页 →</button></nav>
       </section>
       <section class="panel" aria-labelledby="submissions-title">
         <div class="section-heading"><h2 id="submissions-title">提交记录</h2><label class="search admin-search"><input id="submission-search" type="search" placeholder="提交 / 题目 / 选手 / 姓名 / 学号" aria-label="搜索提交记录、姓名或学号" autocomplete="off"></label></div>
         <p id="submission-count" class="muted compact"></p>
         <form id="submission-action-form" class="inline-form"><label for="manual-submission-id">提交 ID</label><input id="manual-submission-id" name="submission_id" inputmode="numeric" pattern="[0-9]+" placeholder="任意提交 ID" required maxlength="20" autocomplete="off"><button class="secondary" type="submit" name="action" value="ignore_submission">忽略</button><button class="secondary" type="submit" name="action" value="restore_submission">恢复</button><span class="muted">列表只展示最近记录</span></form>
         <div class="table-scroll"><table><thead><tr><th>提交 ID</th><th>公开榜单 ID</th><th>题目 ID</th><th>结果</th><th>分数</th><th>提交时间</th><th>操作</th></tr></thead><tbody id="submission-rows"></tbody></table></div>
+        <nav class="admin-pagination" aria-label="提交记录分页"><button id="submission-prev" class="secondary" type="button" disabled>← 上一页</button><span id="submission-page-label" class="muted" aria-live="polite">0 / 0</span><button id="submission-next" class="secondary" type="button" disabled>下一页 →</button></nav>
         <p class="muted compact">忽略提交只影响外榜计分；恢复后将在下一次同步重新计算。</p>
       </section>
     </div>
