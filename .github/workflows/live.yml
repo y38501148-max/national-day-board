@@ -75,6 +75,7 @@ jobs:
           SSO_PASSWORD: ${{ secrets.SSO_PASSWORD }}
           OJ_USERNAME: ${{ secrets.OJ_USERNAME }}
           OJ_PASSWORD: ${{ secrets.OJ_PASSWORD }}
+          LUOGU_COOKIE: ${{ secrets.LUOGU_COOKIE }}
           LIVE_PUBLISH_KEY: ${{ secrets.LIVE_PUBLISH_KEY }}
           LIVE_API_BASE: ${{ vars.LIVE_API_BASE }}
           ONE_SHOT: ${{ inputs.one_shot }}
