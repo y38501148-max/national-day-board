@@ -9,7 +9,7 @@
   <link rel="icon" href="../favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="../style.css?v=363c854c57fe">
   <link rel="stylesheet" href="./admin.css?v=2a449abe081a">
-  <script src="./admin.js?v=8b974332308e" defer></script>
+  <script src="./admin.js?v=cb31e35e8511" defer></script>
 </head>
 <body>
   <header class="topbar wrap"><h1>国庆赛外榜 · 管理</h1><nav><a href="../">查看榜单</a><button id="logout" class="nav-button" hidden>退出</button></nav></header>
@@ -38,7 +38,7 @@
       <section class="panel" aria-labelledby="registration-title">
         <h2 id="registration-title">签到注册</h2>
         <div class="form-row"><form id="registration-form" class="inline-form"><label for="registration-id">签到题 ID</label><input id="registration-id" name="problem_id" value="10595" inputmode="numeric" pattern="[0-9]+" maxlength="20" required><button class="secondary" type="submit">保存题号</button></form>
-        <form id="registration-mode-form" class="inline-form"><label for="registration-mode">解析方式</label><select id="registration-mode" name="value"><option value="stdout">实际标准输出</option><option value="template">固定 C 模板</option></select><button class="secondary" type="submit">保存方式</button></form></div>
+        <form id="registration-mode-form" class="inline-form"><label for="registration-mode">解析方式</label><select id="registration-mode" name="value"><option value="stdout">标准输出</option><option value="template">固定 C 模板</option></select><button class="secondary" type="submit">保存方式</button></form></div>
         <p id="registration-note" class="muted compact"></p><p id="registration-error" class="error" role="status" hidden></p>
         <form id="roster-form" class="inline-form roster-form"><label for="roster-file">私有身份映射</label><input id="roster-file" name="csv" type="file" accept=".csv,text/csv" required><button class="secondary" type="submit">上传 CSV</button></form>
         <p class="muted compact">CSV 列：user_id,student_id；可选 name · 最大 512 KB；身份映射只保存在私有后台。</p>

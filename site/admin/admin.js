@@ -175,7 +175,7 @@ function renderState() {
   const unmapped = state.snapshot.unmapped_registration_count ?? state.snapshot.unmapped_registration_submissions?.length ?? 0;
   $('unmapped-note').hidden = !unmapped;
   $('unmapped-note').textContent = `${unmapped} 条签到提交尚未绑定可信学号，请上传身份映射后同步。`;
-  $('registration-note').textContent = config.registration_mode === 'template' ? '固定 C 模板：需采用题面规定的模板，只修改 puts 中的公开 ID。后台解析源码，不运行学生程序。' : '实际标准输出：需要服务端接入 OJ 的真实输出数据。是否可用以同步结果为准。';
+  $('registration-note').textContent = config.registration_mode === 'template' ? '固定 C 模板：需采用题面规定的模板，只修改 puts 中的公开 ID。后台解析源码，不运行学生程序。' : '标准输出：云端在禁用网络的隔离容器中重跑首次 AC 的签到程序，读取实际输出；支持 C、C++、Python 2/3 和 Java。';
   renderProblems(); renderPlayers(); renderSubmissions();
 }
 async function refreshState({silent = false} = {}) {

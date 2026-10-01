@@ -212,8 +212,8 @@ async function load() {
       const url = new URL(board.contest_url);
       if (url.protocol === 'https:') { link.href = url.href; link.hidden = false; }
     }
-    $('registration-intro').textContent = board.registration_mode === 'stdout' ? '使用自己的 OJ 账号提交 A 题。当前设置为读取首次 AC 的实际标准输出，真实输出接入仍需管理员验证。' : '使用自己的 OJ 账号提交 A 题。本场只接受下方固定 C 模板，请只修改 puts 中的公开榜单 ID，保留其他代码。';
-    $('registration-mode-note').textContent = board.mode === 'standby' ? '比赛尚未配置，注册暂未开放。' : board.registration_mode === 'template' ? '本场采用固定 C 模板注册，请只修改 puts 中的 ID，保留其他代码。后台读取模板，不运行学生程序。' : '本场设置为按首次 AC 的实际标准输出解析 ID，实际输出接入仍需管理员验证。';
+    $('registration-intro').textContent = board.registration_mode === 'stdout' ? '使用自己的 OJ 账号提交 A 题。首次 AC 程序的标准输出就是公开榜单 ID，不限制使用 puts、printf 或其他输出写法。' : '使用自己的 OJ 账号提交 A 题。本场只接受下方固定 C 模板，请只修改 puts 中的公开榜单 ID，保留其他代码。';
+    $('registration-mode-note').textContent = board.mode === 'standby' ? '比赛尚未配置，注册暂未开放。' : board.registration_mode === 'template' ? '本场采用固定 C 模板注册，请只修改 puts 中的 ID，保留其他代码。后台读取模板，不运行学生程序。' : '首次 AC 后自动注册，稍后更新到榜单。注册成功后，后续签到提交不会自动更换 ID。';
     $('error').hidden = true;
     if (problemsChanged) renderHeader();
     if (rowsChanged) filter(false);
