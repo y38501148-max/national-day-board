@@ -4,7 +4,7 @@ const SESSION_KEY = 'national-day-board-admin';
 const formatNumber = new Intl.NumberFormat('zh-CN', {maximumFractionDigits: 2});
 const PAGE_SIZE = 10;
 const listPages = {player: 0, submission: 0};
-let lastRegistrationId = null, lastRegistrationMode = null;
+let lastRegistrationId = null, lastRegistrationMode = null, luoguSignature = null;
 let apiBase = '', session = null, state = null, stateBusy = false, actionBusy = false, expiryTimer;
 function node(tag, text, className) {
   const element = document.createElement(tag);
@@ -112,12 +112,13 @@ function renderPlayers() {
   for (const player of pageRows('player', matches)) {
     const starred = player.starred === true;
     const banned = player.status === 'banned' || bannedUsers.has(String(player.user_id)) || bannedHandles.has(String(player.handle).toLowerCase());
-    const row = node('tr'); cell(row, player.handle || '—'); cell(row, player.name || '待获取', 'identity-name'); cell(row, player.student_id || '—', 'identity-student');
+    const row = node('tr'); cell(row, player.handle || '—'); cell(row, player.name || '待获取', 'identity-name'); cell(row, String(player.user_id).startsWith('luogu:') ? `洛谷 UID ${String(player.user_id).slice(6)}` : player.student_id || '—', 'identity-student');
     const status = node('td'); status.append(node('span', banned ? '已封禁' : player.status === 'pending' ? '待处理' : '正常', `badge${banned ? ' banned' : ''}`));
     if (starred) status.append(node('span', '打星', 'badge starred'));
     row.append(status);
     const actions = node('td', undefined, 'player-actions');
     const starButton = button(starred ? '取消打星' : '打星', 'starred', {handle: player.handle, user_id: player.user_id, starred: !starred}, '/api/admin/starred');
+    if (String(player.user_id).startsWith('luogu:')) {starButton.disabled = true; starButton.title = '洛谷参赛者固定打星';}
     if (player.placeholder) {starButton.disabled = true; starButton.title = '等待可信选手记录后可设置打星';}
     actions.append(starButton);
     actions.append(button(banned ? '解封' : '封禁', banned ? 'unban_player' : 'ban_player', player.user_id == null ? {handle: player.handle} : {user_id: player.user_id}));
@@ -150,6 +151,24 @@ function renderSubmissions() {
   $('submission-rows').replaceChildren(fragment);
   $('submission-count').textContent = `${matches.length} 条记录 · 每页 ${PAGE_SIZE} 行`;
 }
+function renderLuogu() {
+  const config = state.config, settings = config.luogu || {};
+  const problems = [{id:config.registration_problem_id,label:'A'}, ...(config.problems || [])];
+  const signature = JSON.stringify([settings,problems.map(p => [p.id,p.label])]);
+  if (signature !== luoguSignature && !$('luogu-form').contains(document.activeElement)) {
+    $('luogu-team').value = settings.team_id || '137778'; $('luogu-contest').value = settings.contest_id || ''; $('luogu-enabled').checked = settings.enabled === true;
+    const fragment = document.createDocumentFragment();
+    for (const problem of problems) {
+      const row = node('tr'); cell(row, problem.label); cell(row, problem.id);
+      const item = node('td'), input = node('input'); input.dataset.target = String(problem.id); input.placeholder = '例如 T123456'; input.pattern = '[PTU][1-9][0-9]{0,11}'; input.maxLength = 13;
+      input.value = Object.entries(settings.problem_map || {}).find(([,id]) => id === String(problem.id))?.[0] || '';
+      item.append(input); row.append(item); fragment.append(row);
+    }
+    $('luogu-mapping').replaceChildren(fragment); luoguSignature = signature;
+  }
+  const health = state.snapshot.source_status?.luogu;
+  $('luogu-status').textContent = !settings.enabled ? '未启用：等待创建洛谷比赛。' : health?.status === 'error' ? `采集暂不可用（${health.code || '读取失败'}），保留已有成绩并自动重试。` : health?.last_success_at ? `最近成功采集：${time(health.last_success_at)}` : '已启用，等待首次采集。';
+}
 function renderState() {
   const config = state.config, sync = state.sync || {};
   const statuses = {idle: '等待同步', running: '正在同步…', in_progress: '正在同步…', queued: '同步已排队', waiting: '等待同步', requested: '等待同步', success: '同步成功', completed: '同步已结束', failed: '同步失败', error: '同步失败', pending: '等待同步'};
@@ -176,7 +195,7 @@ function renderState() {
   $('unmapped-note').hidden = !unmapped;
   $('unmapped-note').textContent = `${unmapped} 条签到提交尚未绑定可信学号，请上传身份映射后同步。`;
   $('registration-note').textContent = config.registration_mode === 'template' ? '固定 C 模板：需采用题面规定的模板，只修改 puts 中的公开 ID。后台解析源码，不运行学生程序。' : '标准输出：云端在禁用网络的隔离容器中重跑首次 AC 的签到程序，读取实际输出；支持 C、C++、Python 2/3 和 Java。';
-  renderProblems(); renderPlayers(); renderSubmissions();
+  renderLuogu(); renderProblems(); renderPlayers(); renderSubmissions();
 }
 async function refreshState({silent = false} = {}) {
   if (!session || stateBusy || actionBusy) return;
@@ -225,6 +244,15 @@ onForm('login-form', async () => {
   finally {$('login-submit').disabled = false;}
 });
 onForm('submission-action-form', event => mutate(event.submitter?.value === 'restore_submission' ? 'restore_submission' : 'ignore_submission', {submission_id: $('manual-submission-id').value.trim()}));
+onForm('luogu-form', () => {
+  const mapping = {};
+  for (const input of $('luogu-mapping').querySelectorAll('input')) {
+    const pid = input.value.trim(); if (!pid) continue;
+    if (Object.hasOwn(mapping,pid)) {message('同一个洛谷题号不能映射到两道题。'); return;}
+    mapping[pid] = input.dataset.target;
+  }
+  mutate('set_luogu', {team_id:$('luogu-team').value.trim(),contest_id:$('luogu-contest').value.trim(),enabled:$('luogu-enabled').checked,problem_map:mapping});
+});
 onForm('contest-form', () => mutate('set_contest', {contest_id: $('contest-id').value.trim()}));
 onForm('registration-form', () => mutate('set_registration', {problem_id: $('registration-id').value.trim()}));
 onForm('registration-mode-form', () => mutate('set_registration_mode', {value: $('registration-mode').value}));

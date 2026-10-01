@@ -85,6 +85,7 @@ function render() {
     row.append(rankCell);
     const nameCell = el('th', undefined, 'fixed-handle'); nameCell.scope = 'row'; const button = el('button', undefined, 'player');
     button.append(el('span', player.handle));
+    if (player.platform === 'luogu') button.append(el('span', '洛谷', 'muted'));
     button.title = `查看 ${player.handle} 的贡献明细`;
     button.addEventListener('click', () => openDetail(key)); nameCell.append(button); row.append(nameCell);
     row.append(el('td', number.format(player.rating), 'fixed-rating number rating'), el('td', player.full, 'fixed-solved number'));

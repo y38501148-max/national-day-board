@@ -9,7 +9,7 @@
   <link rel="icon" href="../favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="../style.css?v=363c854c57fe">
   <link rel="stylesheet" href="./admin.css?v=2a449abe081a">
-  <script src="./admin.js?v=cb31e35e8511" defer></script>
+  <script src="./admin.js?v=c8fe256bb656" defer></script>
 </head>
 <body>
   <header class="topbar wrap"><h1>国庆赛外榜 · 管理</h1><nav><a href="../">查看榜单</a><button id="logout" class="nav-button" hidden>退出</button></nav></header>
@@ -35,6 +35,16 @@
         <p class="muted compact">自动同步比赛题单、题号顺序及后台分值。题目 Rating = OJ「在比赛中的题目分值」× 100，例如 19 → 1900；题面无需标注 Rating。分值缺失或格式无效时先按 0，每次同步重新检查。</p>
         <div class="table-scroll"><table><thead><tr><th>题号</th><th>题目 ID</th><th>题名</th><th>Rating</th><th>操作</th></tr></thead><tbody id="problem-rows"></tbody></table></div>
       </section>
+      <section class="panel" aria-labelledby="luogu-title">
+        <h2 id="luogu-title">洛谷比赛</h2>
+        <p class="muted compact">填写比赛和对应的洛谷题号后即可自动同步。洛谷选手固定打星，按签到程序的标准输出注册；同名账号分别计分。</p>
+        <form id="luogu-form">
+          <div class="form-row"><label>团队 ID<input id="luogu-team" inputmode="numeric" pattern="[1-9][0-9]{0,11}" required value="137778"></label><label>比赛 ID<input id="luogu-contest" inputmode="numeric" pattern="[1-9][0-9]{0,11}" placeholder="比赛创建后填写"></label><label><input id="luogu-enabled" type="checkbox">启用自动同步</label></div>
+          <div class="table-scroll"><table><thead><tr><th>外榜题号</th><th>北航题目 ID</th><th>洛谷题目 ID</th></tr></thead><tbody id="luogu-mapping"></tbody></table></div>
+          <button class="secondary" type="submit">保存洛谷配置</button>
+        </form>
+        <p id="luogu-status" class="muted compact" role="status"></p>
+      </section>
       <section class="panel" aria-labelledby="registration-title">
         <h2 id="registration-title">签到注册</h2>
         <div class="form-row"><form id="registration-form" class="inline-form"><label for="registration-id">签到题 ID</label><input id="registration-id" name="problem_id" value="10595" inputmode="numeric" pattern="[0-9]+" maxlength="20" required><button class="secondary" type="submit">保存题号</button></form>
@@ -54,7 +64,7 @@
       <section class="panel" aria-labelledby="submissions-title">
         <div class="section-heading"><h2 id="submissions-title">提交记录</h2><label class="search admin-search"><input id="submission-search" type="search" placeholder="提交 / 题目 / 选手 / 姓名 / 学号" aria-label="搜索提交记录、姓名或学号" autocomplete="off"></label></div>
         <p id="submission-count" class="muted compact"></p>
-        <form id="submission-action-form" class="inline-form"><label for="manual-submission-id">提交 ID</label><input id="manual-submission-id" name="submission_id" inputmode="numeric" pattern="[0-9]+" placeholder="任意提交 ID" required maxlength="20" autocomplete="off"><button class="secondary" type="submit" name="action" value="ignore_submission">忽略</button><button class="secondary" type="submit" name="action" value="restore_submission">恢复</button><span class="muted">列表只展示最近记录</span></form>
+        <form id="submission-action-form" class="inline-form"><label for="manual-submission-id">提交 ID</label><input id="manual-submission-id" name="submission_id" pattern="(luogu:)?[1-9][0-9]{0,11}" placeholder="OJ ID 或 luogu:提交ID" required maxlength="18" autocomplete="off"><button class="secondary" type="submit" name="action" value="ignore_submission">忽略</button><button class="secondary" type="submit" name="action" value="restore_submission">恢复</button><span class="muted">列表只展示最近记录</span></form>
         <div class="table-scroll"><table><thead><tr><th>提交 ID</th><th>公开榜单 ID</th><th>题目 ID</th><th>结果</th><th>分数</th><th>提交时间</th><th>操作</th></tr></thead><tbody id="submission-rows"></tbody></table></div>
         <nav class="admin-pagination" aria-label="提交记录分页"><button id="submission-prev" class="secondary" type="button" disabled>← 上一页</button><span id="submission-page-label" class="muted" aria-live="polite">0 / 0</span><button id="submission-next" class="secondary" type="button" disabled>下一页 →</button></nav>
         <p class="muted compact">忽略提交只影响外榜计分；恢复后将在下一次同步重新计算。</p>
