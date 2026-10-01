@@ -63,6 +63,11 @@ jobs:
       - name: Verify replay and publication safeguards
         working-directory: application
         run: python3 -m unittest discover -s tests
+      - name: Build isolated signup stdout runtime
+        working-directory: application
+        run: |
+          docker build -t national-day-signup-runtime:1 deploy/signup-runtime
+          python3 -m deploy.verify_signup_runtime
       - name: 'Continuous OJ polling (30s interval, 20min session)'
         working-directory: application
         env:
